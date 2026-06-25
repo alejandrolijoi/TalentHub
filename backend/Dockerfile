@@ -13,13 +13,9 @@ RUN dotnet publish src/TalentHub.Api/TalentHub.Api.csproj -c Release -o /app/pub
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 COPY --from=build /app/publish .
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 ENV ASPNETCORE_URLS=http://+:8080
 ENV ASPNETCORE_ENVIRONMENT=Production
 EXPOSE 8080
-
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:8080/health || exit 1
 
 ENTRYPOINT ["dotnet", "TalentHub.Api.dll"]

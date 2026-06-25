@@ -13,12 +13,6 @@ services:
         fromDatabase:
           name: talenthub-db
           property: connectionString
-      - key: Redis__Configuration
-        fromRedis:
-          name: talenthub-redis
-          property: connectionString
-      - key: Redis__InstanceName
-        value: TalentHub_
       - key: Jwt__SecretKey
         generateValue: true
       - key: Jwt__Issuer
@@ -39,6 +33,3 @@ databases:
     plan: free
     databaseName: talenthub
     ipAllowList: []
-
-  - name: talenthub-redis
-    plan: free
