@@ -1,0 +1,47 @@
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+
+# .NET
+project.lock.json
+project.fragment.lock.json
+
+# IDE
+.vs/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Node
+node_modules/
+frontend/.next/
+frontend/out/
+
+# Docker
+docker-compose.override.yml
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+Thumbs.db
+.DS_Store
