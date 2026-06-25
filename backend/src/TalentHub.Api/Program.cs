@@ -90,12 +90,9 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-    app.MapScalarApiReference();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
+app.MapScalarApiReference();
 
 app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
