@@ -46,4 +46,10 @@ docker-compose.override.yml
 Thumbs.db
 .DS_Store
 
+# Logs
+*.log
+
+# Docker
+docker-compose.override.yml
+
 .fake

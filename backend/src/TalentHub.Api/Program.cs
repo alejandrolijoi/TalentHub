@@ -107,6 +107,7 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<TalentHubDbContext>();
     await db.Database.EnsureCreatedAsync();
+    await DataSeeder.SeedAsync(db);
 }
 
 app.Run();
