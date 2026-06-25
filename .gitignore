@@ -45,3 +45,5 @@ docker-compose.override.yml
 # OS
 Thumbs.db
 .DS_Store
+
+.fake
