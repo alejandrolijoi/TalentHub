@@ -103,6 +103,19 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
+app.MapGet("/health", async (TalentHubDbContext db) =>
+{
+    try
+    {
+        await db.Database.CanConnectAsync();
+        return Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow });
+    }
+    catch
+    {
+        return Results.StatusCode(503);
+    }
+});
+
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<TalentHubDbContext>();

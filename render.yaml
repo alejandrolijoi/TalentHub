@@ -1,0 +1,44 @@
+services:
+  - type: web
+    name: talenthub-api
+    runtime: docker
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_URLS
+        value: http://+:8080
+      - key: ConnectionStrings__DefaultConnection
+        fromDatabase:
+          name: talenthub-db
+          property: connectionString
+      - key: Redis__Configuration
+        fromRedis:
+          name: talenthub-redis
+          property: connectionString
+      - key: Redis__InstanceName
+        value: TalentHub_
+      - key: Jwt__SecretKey
+        generateValue: true
+      - key: Jwt__Issuer
+        value: talenthub.com
+      - key: Jwt__Audience
+        value: talenthub.com
+      - key: Jwt__ExpirationMinutes
+        value: "15"
+      - key: Jwt__RefreshExpirationDays
+        value: "7"
+      - key: Frontend__Url
+        sync: false
+    healthCheckPath: /health
+    autoDeploy: true
+
+databases:
+  - name: talenthub-db
+    plan: free
+    databaseName: talenthub
+    ipAllowList: []
+
+  - name: talenthub-redis
+    plan: free
