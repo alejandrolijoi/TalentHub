@@ -119,8 +119,15 @@ app.MapGet("/health", async (TalentHubDbContext db) =>
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<TalentHubDbContext>();
-    await db.Database.EnsureCreatedAsync();
-    await DataSeeder.SeedAsync(db);
+    try
+    {
+        await db.Database.EnsureCreatedAsync();
+        await DataSeeder.SeedAsync(db);
+    }
+    catch (Exception ex)
+    {
+        Log.Warning(ex, "Database not available on startup, will retry on first request");
+    }
 }
 
 app.Run();

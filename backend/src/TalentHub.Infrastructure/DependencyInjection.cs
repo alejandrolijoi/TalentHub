@@ -13,8 +13,9 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+        var connectionString = configuration["ConnectionStrings:DefaultConnection"]
+            ?? configuration["DATABASE_URL"]
+            ?? throw new InvalidOperationException("Connection string not found. Set ConnectionStrings:DefaultConnection or DATABASE_URL.");
 
         services.AddDbContext<TalentHubDbContext>(options =>
             options.UseNpgsql(connectionString, b => b.MigrationsAssembly(typeof(TalentHubDbContext).Assembly.FullName)));
