@@ -106,9 +106,27 @@ using (var scope = app.Services.CreateScope())
     {
         Log.Information("Attempting to create/migrate database...");
         Console.WriteLine("Attempting to create/migrate database...");
+
+        var canConnect = await db.Database.CanConnectAsync();
+        Console.WriteLine($"CanConnect: {canConnect}");
+
         var created = await db.Database.EnsureCreatedAsync();
         Log.Information("EnsureCreated returned: {Created}", created);
         Console.WriteLine($"EnsureCreated returned: {created}");
+
+        var conn = db.Database.GetDbConnection();
+        if (conn.State != System.Data.ConnectionState.Open)
+            await conn.OpenAsync();
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name";
+            using var reader = await cmd.ExecuteReaderAsync();
+            var tables = new List<string>();
+            while (await reader.ReadAsync())
+                tables.Add(reader.GetString(0));
+            Console.WriteLine($"Tables after EnsureCreated: [{string.Join(", ", tables)}]");
+        }
+
         dbStatus = created ? "tables_created" : "tables_already_existed";
     }
     catch (Exception ex)
