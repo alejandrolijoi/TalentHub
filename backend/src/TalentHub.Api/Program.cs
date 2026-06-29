@@ -96,83 +96,19 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-string dbStatus = "not_checked";
-string dbError = "";
-
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<TalentHubDbContext>();
     try
     {
-        Log.Information("Attempting to create/migrate database...");
-        Console.WriteLine("Attempting to create/migrate database...");
-
-        var canConnect = await db.Database.CanConnectAsync();
-        Console.WriteLine($"CanConnect: {canConnect}");
-
-        var created = await db.Database.EnsureCreatedAsync();
-        Log.Information("EnsureCreated returned: {Created}", created);
-        Console.WriteLine($"EnsureCreated returned: {created}");
-
-        var conn = db.Database.GetDbConnection();
-        if (conn.State != System.Data.ConnectionState.Open)
-            await conn.OpenAsync();
-        using (var cmd = conn.CreateCommand())
-        {
-            cmd.CommandText = "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name";
-            using var reader = await cmd.ExecuteReaderAsync();
-            var tables = new List<string>();
-            while (await reader.ReadAsync())
-                tables.Add(reader.GetString(0));
-            Console.WriteLine($"Tables after EnsureCreated: [{string.Join(", ", tables)}]");
-        }
-
-        if (created)
-        {
-            Console.WriteLine("EnsureCreated=true but tables not found. Trying raw DDL...");
-            try
-            {
-                using var cmd = conn.CreateCommand();
-                cmd.CommandText = "CREATE TABLE IF NOT EXISTS test_ddl_check (id SERIAL PRIMARY KEY, name TEXT)";
-                await cmd.ExecuteNonQueryAsync();
-                Console.WriteLine("Raw DDL test: SUCCESS");
-
-                using var cmd2 = conn.CreateCommand();
-                cmd2.CommandText = "DROP TABLE IF EXISTS test_ddl_check";
-                await cmd2.ExecuteNonQueryAsync();
-                Console.WriteLine("Raw DDL cleanup: SUCCESS");
-            }
-            catch (Exception ddlEx)
-            {
-                Console.WriteLine($"Raw DDL FAILED: {ddlEx.Message}");
-            }
-        }
-
-        dbStatus = created ? "tables_created" : "tables_already_existed";
-    }
-    catch (Exception ex)
-    {
-        dbStatus = "ensure_failed";
-        dbError = ex.Message + " | " + (ex.InnerException?.Message ?? "");
-        Log.Error(ex, "EnsureCreated failed");
-        Console.WriteLine($"DB ENSURE ERROR: {ex.Message}");
-        Console.WriteLine($"DB ENSURE INNER: {ex.InnerException?.Message}");
-    }
-
-    try
-    {
+        Log.Information("Initializing database...");
+        await db.Database.EnsureCreatedAsync();
         await DataSeeder.SeedAsync(db);
-        dbStatus = "initialized_and_seeded";
         Log.Information("Database seeded successfully");
-        Console.WriteLine("Database seeded successfully");
     }
     catch (Exception ex)
     {
-        dbStatus = "seed_failed";
-        dbError = ex.Message + " | " + (ex.InnerException?.Message ?? "");
-        Log.Error(ex, "Database seeding failed");
-        Console.WriteLine($"DB SEED ERROR: {ex.Message}");
-        Console.WriteLine($"DB SEED INNER: {ex.InnerException?.Message}");
+        Log.Error(ex, "Database initialization failed");
     }
 }
 
@@ -191,38 +127,11 @@ app.MapGet("/health", async (TalentHubDbContext db) =>
     try
     {
         await db.Database.CanConnectAsync();
-        return Results.Ok(new { status = "healthy", dbStatus, timestamp = DateTime.UtcNow });
+        return Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow });
     }
     catch
     {
         return Results.StatusCode(503);
-    }
-});
-
-app.MapGet("/debug/db", async (TalentHubDbContext db) =>
-{
-    try
-    {
-        var canConnect = await db.Database.CanConnectAsync();
-        var entityCount = db.Model.GetEntityTypes().Count();
-
-        List<string> tableNames = new();
-        var conn = db.Database.GetDbConnection();
-        if (conn.State != System.Data.ConnectionState.Open)
-            await conn.OpenAsync();
-        using (var cmd = conn.CreateCommand())
-        {
-            cmd.CommandText = "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name";
-            using var reader = await cmd.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
-                tableNames.Add(reader.GetString(0));
-        }
-
-        return Results.Ok(new { canConnect, entityCount, dbStatus, dbError, tables = tableNames });
-    }
-    catch (Exception ex)
-    {
-        return Results.Ok(new { error = ex.Message, inner = ex.InnerException?.Message, dbStatus, dbError });
     }
 });
 
