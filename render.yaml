@@ -24,7 +24,7 @@ services:
       - key: Jwt__RefreshExpirationDays
         value: "7"
       - key: Frontend__Url
-        sync: false
+        value: "https://talent-hub-wine.vercel.app,http://localhost:3000"
     healthCheckPath: /health
     autoDeploy: true
 
