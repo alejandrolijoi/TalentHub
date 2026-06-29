@@ -127,6 +127,27 @@ using (var scope = app.Services.CreateScope())
             Console.WriteLine($"Tables after EnsureCreated: [{string.Join(", ", tables)}]");
         }
 
+        if (created)
+        {
+            Console.WriteLine("EnsureCreated=true but tables not found. Trying raw DDL...");
+            try
+            {
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = "CREATE TABLE IF NOT EXISTS test_ddl_check (id SERIAL PRIMARY KEY, name TEXT)";
+                await cmd.ExecuteNonQueryAsync();
+                Console.WriteLine("Raw DDL test: SUCCESS");
+
+                using var cmd2 = conn.CreateCommand();
+                cmd2.CommandText = "DROP TABLE IF EXISTS test_ddl_check";
+                await cmd2.ExecuteNonQueryAsync();
+                Console.WriteLine("Raw DDL cleanup: SUCCESS");
+            }
+            catch (Exception ddlEx)
+            {
+                Console.WriteLine($"Raw DDL FAILED: {ddlEx.Message}");
+            }
+        }
+
         dbStatus = created ? "tables_created" : "tables_already_existed";
     }
     catch (Exception ex)
