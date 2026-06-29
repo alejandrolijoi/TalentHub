@@ -1,36 +1,34 @@
 "use client"
 
 import Link from "next/link"
+import { useQuery } from "@tanstack/react-query"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Users, Eye, FileText, TrendingUp, ArrowRight, Briefcase } from "lucide-react"
-
-const stats = [
-  { title: "Active Jobs", value: "8", icon: <Briefcase className="h-5 w-5" />, change: "2 new this month" },
-  { title: "Applications", value: "156", icon: <FileText className="h-5 w-5" />, change: "+23 this week" },
-  { title: "Job Views", value: "2,340", icon: <Eye className="h-5 w-5" />, change: "+12%" },
-  { title: "Conversion", value: "6.7%", icon: <TrendingUp className="h-5 w-5" />, change: "+0.5%" },
-]
-
-const recentApplications = [
-  { candidate: "John Doe", job: "Senior React Developer", status: "Applied", date: "2 hours ago" },
-  { candidate: "Jane Smith", job: ".NET Backend Engineer", status: "Screening", date: "5 hours ago" },
-  { candidate: "Mike Johnson", job: "DevOps Lead", status: "Interview", date: "1 day ago" },
-]
-
-const activeJobs = [
-  { title: "Senior React Developer", applications: 45, views: 890, status: "Active" },
-  { title: ".NET Backend Engineer", applications: 32, views: 650, status: "Active" },
-  { title: "DevOps Lead", applications: 28, views: 520, status: "Active" },
-]
+import { Plus, Users, Eye, FileText, TrendingUp, ArrowRight, Briefcase, Loader2 } from "lucide-react"
+import api, { type Job, type PaginatedResult } from "@/lib/api"
+import { useAuth } from "@/providers/auth-provider"
 
 export default function CompanyDashboard() {
+  const { user } = useAuth()
+
+  const { data: myJobs, isLoading: jobsLoading } = useQuery<PaginatedResult<Job>>({
+    queryKey: ["my-jobs"],
+    queryFn: async () => {
+      const { data } = await api.get("/Jobs/my?pageSize=5")
+      return data
+    },
+  })
+
+  const stats = [
+    { title: "Active Jobs", value: myJobs?.totalCount ?? 0, icon: <Briefcase className="h-5 w-5" /> },
+  ]
+
   return (
     <div className="container py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold">Welcome back, TechCorp!</h1>
+          <h1 className="text-2xl font-bold">Welcome back!</h1>
           <p className="text-muted-foreground">Here&apos;s your hiring overview</p>
         </div>
         <Link href="/dashboard/company/jobs/new">
@@ -51,76 +49,52 @@ export default function CompanyDashboard() {
                   {stat.icon}
                 </div>
               </div>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground mt-1">{stat.change}</p>
+              <div className="text-2xl font-bold">
+                {jobsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stat.value}
+              </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Active Jobs */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">Active Jobs</CardTitle>
-            <Link href="/dashboard/company/jobs">
-              <Button variant="ghost" size="sm">
-                Manage <ArrowRight className="ml-1 h-4 w-4" />
-              </Button>
-            </Link>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {activeJobs.map((job, i) => (
-                <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <div>
-                    <p className="font-medium text-sm">{job.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {job.applications} applications · {job.views} views
-                    </p>
-                  </div>
-                  <Badge variant="success">{job.status}</Badge>
-                </div>
-              ))}
+      {/* Active Jobs */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-lg">Your Jobs</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {jobsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Recent Applications */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">Recent Applications</CardTitle>
-            <Link href="/dashboard/company/applicants">
-              <Button variant="ghost" size="sm">
-                View All <ArrowRight className="ml-1 h-4 w-4" />
-              </Button>
-            </Link>
-          </CardHeader>
-          <CardContent>
+          ) : myJobs?.items.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground mb-4">You haven&apos;t posted any jobs yet.</p>
+              <Link href="/dashboard/company/jobs/new">
+                <Button><Plus className="mr-2 h-4 w-4" /> Post Your First Job</Button>
+              </Link>
+            </div>
+          ) : (
             <div className="space-y-4">
-              {recentApplications.map((app, i) => (
-                <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium text-sm">
-                      {app.candidate[0]}
-                    </div>
+              {myJobs?.items.map((job) => (
+                <Link key={job.id} href={`/jobs/${job.id}`} className="block">
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
                     <div>
-                      <p className="font-medium text-sm">{app.candidate}</p>
-                      <p className="text-xs text-muted-foreground">{app.job}</p>
+                      <p className="font-medium text-sm">{job.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {job.applicationCount} applications · {job.viewCount} views
+                      </p>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <Badge variant={app.status === "Interview" ? "default" : "secondary"}>
-                      {app.status}
+                    <Badge variant={job.status === "Active" ? "success" : "secondary"}>
+                      {job.status}
                     </Badge>
-                    <p className="text-xs text-muted-foreground mt-1">{app.date}</p>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

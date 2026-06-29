@@ -1,66 +1,23 @@
 "use client"
 
 import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Check } from "lucide-react"
-
-const plans = [
-  {
-    name: "Free",
-    description: "Perfect for trying out TalentHub",
-    priceMonthly: 0,
-    priceYearly: 0,
-    maxJobs: 3,
-    features: [
-      "3 job posts per month",
-      "Basic applicant tracking",
-      "Email support",
-      "Company profile",
-    ],
-    cta: "Get Started",
-    popular: false,
-  },
-  {
-    name: "Starter",
-    description: "For growing teams",
-    priceMonthly: 29,
-    priceYearly: 290,
-    maxJobs: 25,
-    features: [
-      "25 job posts per month",
-      "Featured job posts",
-      "Basic analytics",
-      "Priority email support",
-      "Applicant management",
-      "Custom company page",
-    ],
-    cta: "Start Free Trial",
-    popular: true,
-  },
-  {
-    name: "Pro",
-    description: "For established companies",
-    priceMonthly: 79,
-    priceYearly: 790,
-    maxJobs: -1,
-    features: [
-      "Unlimited job posts",
-      "Featured job posts",
-      "Advanced analytics",
-      "Priority support",
-      "Candidate search",
-      "API access",
-      "Team collaboration",
-    ],
-    cta: "Start Free Trial",
-    popular: false,
-  },
-]
+import { Check, Loader2 } from "lucide-react"
+import api, { type Plan } from "@/lib/api"
 
 export default function PricingPage() {
   const [annual, setAnnual] = useState(false)
+
+  const { data: plans, isLoading } = useQuery<Plan[]>({
+    queryKey: ["plans"],
+    queryFn: async () => {
+      const { data } = await api.get("/Subscriptions/plans")
+      return data
+    },
+  })
 
   return (
     <div className="container py-16">
@@ -91,49 +48,67 @@ export default function PricingPage() {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-        {plans.map((plan) => (
-          <Card key={plan.name} className={`relative ${plan.popular ? "border-primary shadow-lg scale-105" : ""}`}>
-            {plan.popular && (
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <Badge>Most Popular</Badge>
-              </div>
-            )}
-            <CardHeader>
-              <CardTitle>{plan.name}</CardTitle>
-              <CardDescription>{plan.description}</CardDescription>
-              <div className="mt-4">
-                <span className="text-4xl font-bold">
-                  ${annual ? Math.floor(plan.priceYearly / 12) : plan.priceMonthly}
-                </span>
-                <span className="text-muted-foreground">/month</span>
-                {annual && plan.priceMonthly > 0 && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Billed ${plan.priceYearly}/year
-                  </p>
+      {isLoading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : (
+        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          {plans?.map((plan, index) => {
+            const isPopular = index === 1
+            const features = plan.features ? Object.values(plan.features).filter((v): v is string => typeof v === "string") : []
+
+            return (
+              <Card key={plan.id} className={`relative ${isPopular ? "border-primary shadow-lg scale-105" : ""}`}>
+                {isPopular && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <Badge>Most Popular</Badge>
+                  </div>
                 )}
-              </div>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-3 mb-6">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2 text-sm">
-                    <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-              <Button
-                className="w-full"
-                variant={plan.popular ? "default" : "outline"}
-                size="lg"
-              >
-                {plan.cta}
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                <CardHeader>
+                  <CardTitle>{plan.name}</CardTitle>
+                  <CardDescription>
+                    {plan.name === "Free" ? "Perfect for trying out TalentHub" : plan.name === "Starter" ? "For growing teams" : "For established companies"}
+                  </CardDescription>
+                  <div className="mt-4">
+                    <span className="text-4xl font-bold">
+                      ${annual ? Math.floor(plan.priceYearly / 12) : plan.priceMonthly}
+                    </span>
+                    <span className="text-muted-foreground">/month</span>
+                    {annual && plan.priceMonthly > 0 && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Billed ${plan.priceYearly}/year
+                      </p>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-3 mb-6">
+                    {(features.length > 0 ? features : [
+                      `${plan.maxJobsPerMonth === -1 ? "Unlimited" : plan.maxJobsPerMonth} job posts per month`,
+                      "Basic applicant tracking",
+                      "Email support",
+                      "Company profile",
+                    ]).map((feature, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm">
+                        <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  <Button
+                    className="w-full"
+                    variant={isPopular ? "default" : "outline"}
+                    size="lg"
+                  >
+                    {plan.priceMonthly === 0 ? "Get Started" : "Start Free Trial"}
+                  </Button>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+      )}
 
       {/* FAQ */}
       <div className="mt-20 max-w-3xl mx-auto">

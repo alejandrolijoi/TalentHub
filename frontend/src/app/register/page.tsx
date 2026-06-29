@@ -6,10 +6,29 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Briefcase, Mail, Lock, User } from "lucide-react"
+import { Briefcase, Mail, Lock, User, Loader2 } from "lucide-react"
+import { useAuth } from "@/providers/auth-provider"
 
 export default function RegisterPage() {
   const [role, setRole] = useState<"Candidate" | "Company">("Candidate")
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
+  const { register } = useAuth()
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError("")
+    setLoading(true)
+    const result = await register({ email, password, role, firstName, lastName })
+    if (result.error) {
+      setError(result.error)
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="container flex items-center justify-center min-h-[calc(100vh-200px)] py-12">
@@ -25,6 +44,7 @@ export default function RegisterPage() {
           {/* Role Toggle */}
           <div className="grid grid-cols-2 gap-2 mb-6 p-1 bg-muted rounded-lg">
             <button
+              type="button"
               onClick={() => setRole("Candidate")}
               className={`py-2 px-4 rounded-md text-sm font-medium transition-colors ${
                 role === "Candidate" ? "bg-white shadow-sm text-foreground" : "text-muted-foreground"
@@ -33,6 +53,7 @@ export default function RegisterPage() {
               I&apos;m looking for a job
             </button>
             <button
+              type="button"
               onClick={() => setRole("Company")}
               className={`py-2 px-4 rounded-md text-sm font-medium transition-colors ${
                 role === "Company" ? "bg-white shadow-sm text-foreground" : "text-muted-foreground"
@@ -42,45 +63,79 @@ export default function RegisterPage() {
             </button>
           </div>
 
-          <form className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-lg">
+                {error}
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="firstName">First Name</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input id="firstName" placeholder="John" className="pl-9" />
+                  <Input
+                    id="firstName"
+                    placeholder="John"
+                    className="pl-9"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    required
+                  />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="lastName">Last Name</Label>
-                <Input id="lastName" placeholder="Doe" />
+                <Input
+                  id="lastName"
+                  placeholder="Doe"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  required
+                />
               </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input id="email" type="email" placeholder="you@example.com" className="pl-9" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  className="pl-9"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
               </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input id="password" type="password" placeholder="••••••••" className="pl-9" />
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  className="pl-9"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                />
               </div>
             </div>
-            <Button className="w-full" size="lg">
-              Create Account
+            <Button className="w-full" size="lg" type="submit" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating account...
+                </>
+              ) : (
+                "Create Account"
+              )}
             </Button>
           </form>
-
-          <p className="text-center text-xs text-muted-foreground mt-4">
-            By signing up, you agree to our{" "}
-            <Link href="/terms" className="text-primary hover:underline">Terms</Link>
-            {" "}and{" "}
-            <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link>
-          </p>
 
           <p className="text-center text-sm text-muted-foreground mt-6">
             Already have an account?{" "}

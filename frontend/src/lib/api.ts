@@ -23,6 +23,8 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       if (typeof window !== "undefined") {
         localStorage.removeItem("token")
+        localStorage.removeItem("refreshToken")
+        localStorage.removeItem("user")
         window.location.href = "/login"
       }
     }
@@ -32,16 +34,12 @@ api.interceptors.response.use(
 
 export default api
 
-export interface User {
-  id: string
-  email: string
-  role: "Candidate" | "Company" | "Admin"
-}
+export type UserRole = "Candidate" | "Company" | "Admin"
 
 export interface AuthResponse {
   userId: string
   email: string
-  role: string
+  role: UserRole
   token: string
   refreshToken: string
 }
@@ -78,11 +76,16 @@ export interface Company {
   description?: string
   logoUrl?: string
   website?: string
+  linkedInUrl?: string
   industry?: string
   companySize?: string
   location?: string
   foundedYear?: number
   createdAt: string
+}
+
+export interface CompanyProfile extends Company {
+  totalJobs?: number
 }
 
 export interface Candidate {
@@ -122,7 +125,7 @@ export interface Plan {
   currency: string
   maxJobsPerMonth: number
   maxApplicantsPerJob?: number
-  features: Record<string, any>
+  features: Record<string, unknown>
 }
 
 export interface PaginatedResult<T> {
@@ -142,4 +145,37 @@ export interface ApplicationStats {
   offer: number
   hired: number
   rejected: number
+}
+
+export interface Subscription {
+  id: string
+  planId: string
+  planName: string
+  paymentProvider: string
+  status: string
+  currentPeriodStart: string
+  currentPeriodEnd: string
+  cancelAtPeriodEnd: boolean
+}
+
+export interface Invoice {
+  id: string
+  amount: number
+  currency: string
+  status: string
+  invoiceUrl?: string
+  createdAt: string
+}
+
+export interface JobSearchParams {
+  query?: string
+  categoryId?: string
+  employmentType?: string
+  experienceLevel?: string
+  remoteType?: string
+  salaryMin?: number
+  salaryMax?: number
+  location?: string
+  page?: number
+  pageSize?: number
 }

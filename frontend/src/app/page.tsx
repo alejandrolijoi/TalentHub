@@ -1,10 +1,38 @@
+"use client"
+
 import Link from "next/link"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { Search, MapPin, Building2, ArrowRight, Star, Zap, Shield, Users } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Search, MapPin, Building2, ArrowRight, Zap, Shield, Loader2 } from "lucide-react"
+import api, { type Job } from "@/lib/api"
+import { formatSalary, timeAgo } from "@/lib/utils"
 
 export default function Home() {
+  const [heroSearch, setHeroSearch] = useState("")
+  const [heroLocation, setHeroLocation] = useState("")
+  const router = useRouter()
+
+  const { data: featuredJobs, isLoading } = useQuery<Job[]>({
+    queryKey: ["featured-jobs"],
+    queryFn: async () => {
+      const { data } = await api.get("/Jobs/featured?limit=6")
+      return data
+    },
+  })
+
+  const handleHeroSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    const params = new URLSearchParams()
+    if (heroSearch) params.set("q", heroSearch)
+    if (heroLocation) params.set("location", heroLocation)
+    router.push(`/jobs?${params.toString()}`)
+  }
+
   return (
     <div className="flex flex-col">
       {/* Hero Section */}
@@ -12,7 +40,9 @@ export default function Home() {
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-5" />
         <div className="container relative py-24 md:py-32">
           <div className="mx-auto max-w-3xl text-center">
-            <Badge className="mb-4">1,234+ Jobs Available</Badge>
+            <Badge className="mb-4">
+              {isLoading ? "Loading..." : `${featuredJobs?.length ?? 0}+ Jobs Available`}
+            </Badge>
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
               Find Your{" "}
               <span className="text-gradient">Dream Job</span>
@@ -24,31 +54,37 @@ export default function Home() {
             </p>
 
             {/* Search Box */}
-            <div className="mx-auto max-w-2xl">
-              <Card className="p-2 shadow-xl">
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <div className="flex-1 flex items-center gap-2 px-4">
-                    <Search className="h-5 w-5 text-muted-foreground" />
-                    <input
-                      type="text"
-                      placeholder="Job title, keyword, or company"
-                      className="w-full py-3 bg-transparent outline-none"
-                    />
+            <form onSubmit={handleHeroSearch}>
+              <div className="mx-auto max-w-2xl">
+                <Card className="p-2 shadow-xl">
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="flex-1 flex items-center gap-2 px-4">
+                      <Search className="h-5 w-5 text-muted-foreground" />
+                      <input
+                        type="text"
+                        placeholder="Job title, keyword, or company"
+                        className="w-full py-3 bg-transparent outline-none"
+                        value={heroSearch}
+                        onChange={(e) => setHeroSearch(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex-1 flex items-center gap-2 px-4 border-t sm:border-t-0 sm:border-l">
+                      <MapPin className="h-5 w-5 text-muted-foreground" />
+                      <input
+                        type="text"
+                        placeholder="Location or Remote"
+                        className="w-full py-3 bg-transparent outline-none"
+                        value={heroLocation}
+                        onChange={(e) => setHeroLocation(e.target.value)}
+                      />
+                    </div>
+                    <Button size="lg" className="px-8" type="submit">
+                      Search Jobs
+                    </Button>
                   </div>
-                  <div className="flex-1 flex items-center gap-2 px-4 border-t sm:border-t-0 sm:border-l">
-                    <MapPin className="h-5 w-5 text-muted-foreground" />
-                    <input
-                      type="text"
-                      placeholder="Location or Remote"
-                      className="w-full py-3 bg-transparent outline-none"
-                    />
-                  </div>
-                  <Button size="lg" className="px-8">
-                    Search Jobs
-                  </Button>
-                </div>
-              </Card>
-            </div>
+                </Card>
+              </div>
+            </form>
 
             {/* Tags */}
             <div className="mt-6 flex flex-wrap justify-center gap-2 text-sm text-muted-foreground">
@@ -63,50 +99,6 @@ export default function Home() {
                 </Link>
               ))}
             </div>
-          </div>
-        </div>
-
-        {/* Floating Elements */}
-        <div className="absolute top-20 left-10 animate-float hidden lg:block">
-          <div className="glass rounded-xl p-3 shadow-lg">
-            <div className="flex items-center gap-2">
-              <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <Building2 className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">Google</p>
-                <p className="text-xs text-muted-foreground">12 open positions</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="absolute bottom-20 right-10 animate-float hidden lg:block" style={{ animationDelay: "1s" }}>
-          <div className="glass rounded-xl p-3 shadow-lg">
-            <div className="flex items-center gap-2">
-              <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-                <Zap className="h-5 w-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">New Match!</p>
-                <p className="text-xs text-muted-foreground">95% profile match</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Featured Companies */}
-      <section className="py-16 border-b">
-        <div className="container">
-          <p className="text-center text-sm text-muted-foreground mb-8">
-            Trusted by 500+ companies worldwide
-          </p>
-          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-50">
-            {["Google", "Microsoft", "Amazon", "Meta", "Apple", "Netflix"].map((company) => (
-              <div key={company} className="text-xl md:text-2xl font-bold text-gray-400">
-                {company}
-              </div>
-            ))}
           </div>
         </div>
       </section>
@@ -126,46 +118,47 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {[
-              { title: "Senior React Developer", company: "TechCorp", location: "Remote", salary: "$80k-$100k", badge: "Featured", color: "from-blue-500 to-cyan-500" },
-              { title: ".NET Backend Engineer", company: "StartupXYZ", location: "NYC Hybrid", salary: "$70k-$90k", badge: "Urgent", color: "from-violet-500 to-purple-500" },
-              { title: "DevOps Lead", company: "CloudInc", location: "Remote", salary: "$90k-$110k", badge: "New", color: "from-green-500 to-emerald-500" },
-              { title: "Full Stack Developer", company: "DigitalCo", location: "Austin, TX", salary: "$75k-$95k", badge: null, color: "from-orange-500 to-amber-500" },
-              { title: "Data Scientist", company: "AI Labs", location: "Remote", salary: "$95k-$120k", badge: "Featured", color: "from-pink-500 to-rose-500" },
-              { title: "Product Manager", company: "SaaS Inc", location: "SF Hybrid", salary: "$85k-$105k", badge: null, color: "from-indigo-500 to-blue-500" },
-            ].map((job, i) => (
-              <Link key={i} href={`/jobs/${i}`}>
-                <Card className="h-full card-hover cursor-pointer group">
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className={`h-12 w-12 rounded-xl bg-gradient-to-br ${job.color} flex items-center justify-center text-white font-bold text-lg`}>
-                        {job.company[0]}
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {featuredJobs?.map((job) => (
+                <Link key={job.id} href={`/jobs/${job.id}`}>
+                  <Card className="h-full card-hover cursor-pointer group">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        {job.companyLogoUrl ? (
+                          <img src={job.companyLogoUrl} alt={job.companyName} className="h-12 w-12 rounded-xl object-cover" />
+                        ) : (
+                          <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center text-white font-bold text-lg">
+                            {job.companyName[0]}
+                          </div>
+                        )}
+                        {job.isFeatured && <Badge>Featured</Badge>}
                       </div>
-                      {job.badge && (
-                        <Badge variant={job.badge === "Featured" ? "default" : job.badge === "Urgent" ? "destructive" : "secondary"}>
-                          {job.badge}
-                        </Badge>
-                      )}
-                    </div>
-                    <h3 className="font-semibold text-lg mb-1 group-hover:text-primary transition-colors">
-                      {job.title}
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-3">{job.company}</p>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <MapPin className="h-4 w-4" /> {job.location}
-                      </span>
-                    </div>
-                    <div className="mt-4 pt-4 border-t flex items-center justify-between">
-                      <span className="font-semibold text-primary">{job.salary}</span>
-                      <span className="text-xs text-muted-foreground">2 days ago</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
+                      <h3 className="font-semibold text-lg mb-1 group-hover:text-primary transition-colors">
+                        {job.title}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-3">{job.companyName}</p>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-4 w-4" /> {job.location || "Remote"}
+                        </span>
+                      </div>
+                      <div className="mt-4 pt-4 border-t flex items-center justify-between">
+                        <span className="font-semibold text-primary">
+                          {formatSalary(job.salaryMin, job.salaryMax, job.currency)}
+                        </span>
+                        <span className="text-xs text-muted-foreground">{timeAgo(job.createdAt)}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -207,25 +200,6 @@ export default function Home() {
                 <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
                 <p className="text-muted-foreground">{feature.description}</p>
               </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Stats */}
-      <section className="py-20">
-        <div className="container">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            {[
-              { value: "10,000+", label: "Active Jobs" },
-              { value: "5,000+", label: "Companies" },
-              { value: "50,000+", label: "Candidates" },
-              { value: "95%", label: "Satisfaction" },
-            ].map((stat, i) => (
-              <div key={i}>
-                <div className="text-4xl md:text-5xl font-bold text-gradient mb-2">{stat.value}</div>
-                <div className="text-muted-foreground">{stat.label}</div>
-              </div>
             ))}
           </div>
         </div>

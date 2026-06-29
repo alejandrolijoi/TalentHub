@@ -3,10 +3,14 @@
 import Link from "next/link"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Menu, X, Briefcase, Search } from "lucide-react"
+import { Menu, X, Briefcase, LogOut, LayoutDashboard } from "lucide-react"
+import { useAuth } from "@/providers/auth-provider"
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { user, logout, isLoading, isCandidate, isCompany } = useAuth()
+
+  const dashboardHref = isCompany ? "/dashboard/company" : "/dashboard/candidate"
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-lg">
@@ -31,30 +35,74 @@ export function Header() {
         </nav>
 
         <div className="hidden md:flex items-center gap-3">
-          <Link href="/login">
-            <Button variant="ghost">Log in</Button>
-          </Link>
-          <Link href="/register">
-            <Button>Get Started</Button>
-          </Link>
+          {isLoading ? null : user ? (
+            <>
+              <Link href={dashboardHref}>
+                <Button variant="ghost">
+                  <LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard
+                </Button>
+              </Link>
+              <Button variant="ghost" onClick={logout}>
+                <LogOut className="mr-2 h-4 w-4" /> Logout
+              </Button>
+            </>
+          ) : (
+            <>
+              <Link href="/login">
+                <Button variant="ghost">Log in</Button>
+              </Link>
+              <Link href="/register">
+                <Button>Get Started</Button>
+              </Link>
+            </>
+          )}
         </div>
 
-        <button
-          className="md:hidden p-2"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        >
+        <button className="md:hidden p-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
           {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </div>
 
       {mobileMenuOpen && (
         <div className="md:hidden border-t bg-white p-4 space-y-4">
-          <Link href="/jobs" className="block py-2 text-sm font-medium">Find Jobs</Link>
-          <Link href="/companies" className="block py-2 text-sm font-medium">Companies</Link>
-          <Link href="/pricing" className="block py-2 text-sm font-medium">Pricing</Link>
+          <Link href="/jobs" className="block py-2 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
+            Find Jobs
+          </Link>
+          <Link href="/companies" className="block py-2 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
+            Companies
+          </Link>
+          <Link href="/pricing" className="block py-2 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
+            Pricing
+          </Link>
           <div className="flex flex-col gap-2 pt-4 border-t">
-            <Link href="/login"><Button variant="ghost" className="w-full">Log in</Button></Link>
-            <Link href="/register"><Button className="w-full">Get Started</Button></Link>
+            {isLoading ? null : user ? (
+              <>
+                <Link href={dashboardHref} onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="ghost" className="w-full">
+                    <LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard
+                  </Button>
+                </Link>
+                <Button
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => {
+                    setMobileMenuOpen(false)
+                    logout()
+                  }}
+                >
+                  <LogOut className="mr-2 h-4 w-4" /> Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="ghost" className="w-full">Log in</Button>
+                </Link>
+                <Link href="/register" onClick={() => setMobileMenuOpen(false)}>
+                  <Button className="w-full">Get Started</Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}
