@@ -128,7 +128,9 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        Log.Warning(ex, "Database not available on startup, will retry on first request");
+        Log.Error(ex, "Database initialization failed on startup");
+        Console.WriteLine($"DB INIT ERROR: {ex.Message}");
+        Console.WriteLine($"DB INIT STACK: {ex.StackTrace}");
     }
 }
 
