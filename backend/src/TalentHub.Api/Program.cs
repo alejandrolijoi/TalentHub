@@ -108,6 +108,19 @@ using (var scope = app.Services.CreateScope())
         var created = await db.Database.EnsureCreatedAsync();
         Log.Information("EnsureCreated returned: {Created}", created);
         Console.WriteLine($"EnsureCreated returned: {created}");
+        dbStatus = created ? "tables_created" : "tables_already_existed";
+    }
+    catch (Exception ex)
+    {
+        dbStatus = "ensure_failed";
+        dbError = ex.Message + " | " + (ex.InnerException?.Message ?? "");
+        Log.Error(ex, "EnsureCreated failed");
+        Console.WriteLine($"DB ENSURE ERROR: {ex.Message}");
+        Console.WriteLine($"DB ENSURE INNER: {ex.InnerException?.Message}");
+    }
+
+    try
+    {
         await DataSeeder.SeedAsync(db);
         dbStatus = "initialized_and_seeded";
         Log.Information("Database seeded successfully");
@@ -115,12 +128,11 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        dbStatus = "failed";
+        dbStatus = "seed_failed";
         dbError = ex.Message + " | " + (ex.InnerException?.Message ?? "");
-        Log.Error(ex, "Database initialization failed on startup");
-        Console.WriteLine($"DB INIT ERROR: {ex.Message}");
-        Console.WriteLine($"DB INIT INNER: {ex.InnerException?.Message}");
-        Console.WriteLine($"DB INIT STACK: {ex.StackTrace}");
+        Log.Error(ex, "Database seeding failed");
+        Console.WriteLine($"DB SEED ERROR: {ex.Message}");
+        Console.WriteLine($"DB SEED INNER: {ex.InnerException?.Message}");
     }
 }
 
