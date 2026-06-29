@@ -31,9 +31,9 @@ public static class DependencyInjection
 
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        var raw = configuration["ConnectionStrings:DefaultConnection"]
-            ?? configuration["DATABASE_URL"]
-            ?? throw new InvalidOperationException("Connection string not found. Set ConnectionStrings:DefaultConnection or DATABASE_URL.");
+        var raw = configuration["DATABASE_URL"]
+            ?? configuration["ConnectionStrings:DefaultConnection"]
+            ?? throw new InvalidOperationException("Connection string not found. Set DATABASE_URL or ConnectionStrings:DefaultConnection.");
 
         var connectionString = ParseConnectionString(raw);
 
