@@ -10,9 +10,7 @@ services:
       - key: ASPNETCORE_URLS
         value: http://+:8080
       - key: DATABASE_URL
-        fromDatabase:
-          name: talenthub-db
-          property: connectionString
+        sync: false
       - key: Jwt__SecretKey
         generateValue: true
       - key: Jwt__Issuer
@@ -40,9 +38,3 @@ services:
       - key: NEXT_PUBLIC_API_URL
         value: https://talenthub-api.onrender.com/api
     autoDeploy: true
-
-databases:
-  - name: talenthub-db
-    plan: free
-    databaseName: talenthub
-    ipAllowList: []
