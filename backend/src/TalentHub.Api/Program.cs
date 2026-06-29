@@ -95,6 +95,35 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+string dbStatus = "not_checked";
+string dbError = "";
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<TalentHubDbContext>();
+    try
+    {
+        Log.Information("Attempting to create/migrate database...");
+        Console.WriteLine("Attempting to create/migrate database...");
+        var created = await db.Database.EnsureCreatedAsync();
+        Log.Information("EnsureCreated returned: {Created}", created);
+        Console.WriteLine($"EnsureCreated returned: {created}");
+        await DataSeeder.SeedAsync(db);
+        dbStatus = "initialized_and_seeded";
+        Log.Information("Database seeded successfully");
+        Console.WriteLine("Database seeded successfully");
+    }
+    catch (Exception ex)
+    {
+        dbStatus = "failed";
+        dbError = ex.Message + " | " + (ex.InnerException?.Message ?? "");
+        Log.Error(ex, "Database initialization failed on startup");
+        Console.WriteLine($"DB INIT ERROR: {ex.Message}");
+        Console.WriteLine($"DB INIT INNER: {ex.InnerException?.Message}");
+        Console.WriteLine($"DB INIT STACK: {ex.StackTrace}");
+    }
+}
+
 app.UseSwagger();
 app.UseSwaggerUI();
 app.MapScalarApiReference();
@@ -110,7 +139,7 @@ app.MapGet("/health", async (TalentHubDbContext db) =>
     try
     {
         await db.Database.CanConnectAsync();
-        return Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow });
+        return Results.Ok(new { status = "healthy", dbStatus, timestamp = DateTime.UtcNow });
     }
     catch
     {
@@ -123,35 +152,13 @@ app.MapGet("/debug/db", async (TalentHubDbContext db) =>
     try
     {
         var canConnect = await db.Database.CanConnectAsync();
-        return Results.Ok(new { canConnect, entityCount = db.Model.GetEntityTypes().Count() });
+        var tables = db.Model.GetEntityTypes().Count();
+        return Results.Ok(new { canConnect, entityCount = tables, dbStatus, dbError });
     }
     catch (Exception ex)
     {
-        return Results.Ok(new { error = ex.Message, inner = ex.InnerException?.Message });
+        return Results.Ok(new { error = ex.Message, inner = ex.InnerException?.Message, dbStatus, dbError });
     }
 });
-
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<TalentHubDbContext>();
-    try
-    {
-        Log.Information("Attempting to create/migrate database...");
-        Console.WriteLine("Attempting to create/migrate database...");
-        var created = await db.Database.EnsureCreatedAsync();
-        Log.Information("EnsureCreated returned: {Created}", created);
-        Console.WriteLine($"EnsureCreated returned: {created}");
-        await DataSeeder.SeedAsync(db);
-        Log.Information("Database seeded successfully");
-        Console.WriteLine("Database seeded successfully");
-    }
-    catch (Exception ex)
-    {
-        Log.Error(ex, "Database initialization failed on startup");
-        Console.WriteLine($"DB INIT ERROR: {ex.Message}");
-        Console.WriteLine($"DB INIT INNER: {ex.InnerException?.Message}");
-        Console.WriteLine($"DB INIT STACK: {ex.StackTrace}");
-    }
-}
 
 app.Run();
