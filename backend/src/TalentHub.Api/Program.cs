@@ -118,18 +118,39 @@ app.MapGet("/health", async (TalentHubDbContext db) =>
     }
 });
 
+app.MapGet("/debug/db", async (TalentHubDbContext db) =>
+{
+    try
+    {
+        var canConnect = await db.Database.CanConnectAsync();
+        var tableCount = await db.Database.ExecuteSqlRawAsync("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public'");
+        return Results.Ok(new { canConnect, tableCount });
+    }
+    catch (Exception ex)
+    {
+        return Results.Ok(new { error = ex.Message, inner = ex.InnerException?.Message });
+    }
+});
+
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<TalentHubDbContext>();
     try
     {
-        await db.Database.EnsureCreatedAsync();
+        Log.Information("Attempting to create/migrate database...");
+        Console.WriteLine("Attempting to create/migrate database...");
+        var created = await db.Database.EnsureCreatedAsync();
+        Log.Information("EnsureCreated returned: {Created}", created);
+        Console.WriteLine($"EnsureCreated returned: {created}");
         await DataSeeder.SeedAsync(db);
+        Log.Information("Database seeded successfully");
+        Console.WriteLine("Database seeded successfully");
     }
     catch (Exception ex)
     {
         Log.Error(ex, "Database initialization failed on startup");
         Console.WriteLine($"DB INIT ERROR: {ex.Message}");
+        Console.WriteLine($"DB INIT INNER: {ex.InnerException?.Message}");
         Console.WriteLine($"DB INIT STACK: {ex.StackTrace}");
     }
 }
