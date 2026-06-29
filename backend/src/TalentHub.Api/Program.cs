@@ -123,8 +123,7 @@ app.MapGet("/debug/db", async (TalentHubDbContext db) =>
     try
     {
         var canConnect = await db.Database.CanConnectAsync();
-        var tableCount = await db.Database.ExecuteSqlRawAsync("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public'");
-        return Results.Ok(new { canConnect, tableCount });
+        return Results.Ok(new { canConnect, entityCount = db.Model.GetEntityTypes().Count() });
     }
     catch (Exception ex)
     {
