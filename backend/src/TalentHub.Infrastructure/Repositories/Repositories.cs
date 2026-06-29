@@ -82,7 +82,7 @@ public class JobRepository : Repository<Job>, IJobRepository
         var q = _context.Jobs
             .Include(j => j.Company)
             .Include(j => j.Category)
-            .Include(j => j.JobSkills)
+            .Include(j => j.JobSkills).ThenInclude(js => js.Skill)
             .Where(j => j.Status == Domain.Enums.JobStatus.Active)
             .AsQueryable();
 
@@ -111,6 +111,7 @@ public class JobRepository : Repository<Job>, IJobRepository
         await _context.Jobs
             .Include(j => j.Company)
             .Include(j => j.Category)
+            .Include(j => j.JobSkills).ThenInclude(js => js.Skill)
             .Where(j => j.CompanyId == companyId)
             .OrderByDescending(j => j.CreatedAt)
             .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
@@ -118,6 +119,7 @@ public class JobRepository : Repository<Job>, IJobRepository
     public async Task<IReadOnlyList<Job>> GetFeaturedJobsAsync(int limit) =>
         await _context.Jobs
             .Include(j => j.Company)
+            .Include(j => j.JobSkills).ThenInclude(js => js.Skill)
             .Where(j => j.IsFeatured && j.Status == Domain.Enums.JobStatus.Active)
             .OrderByDescending(j => j.CreatedAt)
             .Take(limit).ToListAsync();
