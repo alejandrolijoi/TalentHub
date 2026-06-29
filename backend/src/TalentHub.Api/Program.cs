@@ -2,6 +2,7 @@ using System.Text;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Scalar.AspNetCore;
@@ -164,8 +165,21 @@ app.MapGet("/debug/db", async (TalentHubDbContext db) =>
     try
     {
         var canConnect = await db.Database.CanConnectAsync();
-        var tables = db.Model.GetEntityTypes().Count();
-        return Results.Ok(new { canConnect, entityCount = tables, dbStatus, dbError });
+        var entityCount = db.Model.GetEntityTypes().Count();
+
+        List<string> tableNames = new();
+        var conn = db.Database.GetDbConnection();
+        if (conn.State != System.Data.ConnectionState.Open)
+            await conn.OpenAsync();
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name";
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+                tableNames.Add(reader.GetString(0));
+        }
+
+        return Results.Ok(new { canConnect, entityCount, dbStatus, dbError, tables = tableNames });
     }
     catch (Exception ex)
     {
